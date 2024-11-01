@@ -90,8 +90,8 @@ P.S. You can delete this when you're done too. It's your config now! :)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
--- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+-- Set to true if you have a Nerd Font installed
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -102,7 +102,7 @@ vim.g.have_nerd_font = false
 vim.o.number = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.o.relativenumber = true
+vim.opt.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.o.mouse = 'a'
@@ -197,26 +197,10 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 -- or just use <C-\><C-n> to exit terminal mode
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
--- TIP: Disable arrow keys in normal mode
--- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
--- vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
--- vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
--- vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
-
--- Keybinds to make split navigation easier.
---  Use CTRL+<hjkl> to switch between windows
---
---  See `:help wincmd` for a list of all window commands
 vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
 vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
-
--- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
--- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
--- vim.keymap.set("n", "<C-S-l>", "<C-w>L", { desc = "Move window to the right" })
--- vim.keymap.set("n", "<C-S-j>", "<C-w>J", { desc = "Move window to the lower" })
--- vim.keymap.set("n", "<C-S-k>", "<C-w>K", { desc = "Move window to the upper" })
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -472,9 +456,32 @@ require('lazy').setup({
     end,
   },
 
-  -- LSP Plugins
   {
-    -- Main LSP Configuration
+    'delphinus/dwm.nvim',
+    config = function()
+      local dwm = require 'dwm'
+      dwm.setup {
+        key_maps = false,
+        master_pane_count = 1,
+        master_pane_width = '60%',
+      }
+      vim.keymap.set('n', '<C-j>', '<C-w>w')
+      vim.keymap.set('n', '<C-k>', '<C-w>W')
+      vim.keymap.set('n', '<C-m>', dwm.focus)
+      vim.keymap.set('n', '<C-l>', dwm.grow)
+      vim.keymap.set('n', '<C-h>', dwm.shrink)
+      vim.keymap.set('n', '<C-n>', dwm.new)
+      vim.keymap.set('n', '<C-q>', dwm.rotateLeft)
+      vim.keymap.set('n', '<C-s>', dwm.rotate)
+      vim.keymap.set('n', '<C-c>', function()
+        vim.notify('closing!', vim.log.levels.INFO)
+        dwm.close()
+      end)
+
+      vim.cmd [[au BufRead * if &previewwindow | let b:dwm_disabled = 1 | endif]]
+    end,
+  },
+  { -- LSP Configuration & Plugins
     'neovim/nvim-lspconfig',
     dependencies = {
       -- Automatically install LSPs and related tools to stdpath for Neovim
@@ -593,7 +600,8 @@ require('lazy').setup({
       --  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
       --  See `:help lsp-config` for information about keys and how to configure
       local servers = {
-        -- clangd = {},
+        clangd = {},
+        ols = {},
         -- gopls = {},
         -- pyright = {},
         -- rust_analyzer = {},
@@ -837,6 +845,7 @@ require('lazy').setup({
       local statusline = require 'mini.statusline'
       -- set use_icons to true if you have a Nerd Font
       statusline.setup { use_icons = vim.g.have_nerd_font }
+      statusline.section_git = function(args) args.trunc_width = 7 end
 
       -- You can configure sections in the statusline by overriding their
       -- default behavior. For example, here we set the section for
@@ -861,7 +870,42 @@ require('lazy').setup({
     end,
   },
 
-  -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
+  {
+    'folke/zen-mode.nvim',
+    opts = {},
+    config = function()
+      require('zen-mode').setup()
+      vim.keymap.set('n', '<leader>z', require('zen-mode').toggle, { desc = '[Z]en mode toggle' })
+    end,
+  },
+  {
+    'Sonicfury/scretch.nvim',
+    requires = 'nvim-telescope/telescope.nvim',
+    config = function()
+      local scretch = require 'scretch'
+
+      scretch.setup {
+        scretch_dir = vim.fn.stdpath 'config' .. '/scretch/', -- will be created if it doesn't exist
+        templte_dir = vim.fn.stdpath 'data' .. '/scretch/templates', -- will be created if it doesn't exist
+        default_name = 'scretch_',
+        default_type = 'md', -- default unnamed Scretches are named "scretch_*.txt"
+        split_cmd = 'vsplit', -- vim split command used when creating a new Scretch
+        backend = 'telescope.builtin', -- also accpets "fzf-lua"
+      }
+
+      vim.keymap.set('n', '<leader>scnn', scretch.new, { desc = '[Sc]retch [N]ew' })
+      vim.keymap.set('n', '<leader>scna', scretch.new_named, { desc = '[Sc]retch [N]ew N[a]me' })
+      vim.keymap.set('n', '<leader>scl', scretch.last, { desc = '[Sc]retch [L]ast' })
+      vim.keymap.set('n', '<leader>scs', scretch.search, { desc = '[Sc]retch [S]earch' })
+      vim.keymap.set('n', '<leader>scg', scretch.grep, { desc = '[Sc]retch [G]rep' })
+      vim.keymap.set('n', '<leader>sce', scretch.explore, { desc = '[Sc]retch [E]xplore' })
+      vim.keymap.set('n', '<leader>sctn', scretch.new_from_template, { desc = '[Sc]retch [T]emplate [N]ew' })
+      vim.keymap.set('n', '<leader>scte', scretch.edit_template, { desc = '[Sc]retch [T]emplate [E]dit' })
+      vim.keymap.set('n', '<leader>scts', scretch.save_as_template, { desc = '[Sc]retch [T]emplate [S]ave' })
+    end,
+  },
+
+  -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
   -- place them in the correct locations.
 
