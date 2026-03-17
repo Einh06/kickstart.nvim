@@ -90,8 +90,8 @@ P.S. You can delete this when you're done too. It's your config now! :)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
--- Set to true if you have a Nerd Font installed
-vim.g.have_nerd_font = true
+-- Set to true if you have a Nerd Font installed and selected in the terminal
+vim.g.have_nerd_font = false
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -102,7 +102,7 @@ vim.g.have_nerd_font = true
 vim.o.number = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
-vim.opt.relativenumber = true
+-- vim.o.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.o.mouse = 'a'
@@ -310,6 +310,7 @@ require('lazy').setup({
 
   { -- Fuzzy Finder (files, lsp, etc)
     'nvim-telescope/telescope.nvim',
+    version = '*',
     -- By default, Telescope is included and acts as your picker for everything.
 
     -- If you would like to switch to a different picker (like snacks, or fzf-lua)
@@ -456,32 +457,9 @@ require('lazy').setup({
     end,
   },
 
+  -- LSP Plugins
   {
-    'delphinus/dwm.nvim',
-    config = function()
-      local dwm = require 'dwm'
-      dwm.setup {
-        key_maps = false,
-        master_pane_count = 1,
-        master_pane_width = '60%',
-      }
-      vim.keymap.set('n', '<C-j>', '<C-w>w')
-      vim.keymap.set('n', '<C-k>', '<C-w>W')
-      vim.keymap.set('n', '<C-m>', dwm.focus)
-      vim.keymap.set('n', '<C-l>', dwm.grow)
-      vim.keymap.set('n', '<C-h>', dwm.shrink)
-      vim.keymap.set('n', '<C-n>', dwm.new)
-      vim.keymap.set('n', '<C-q>', dwm.rotateLeft)
-      vim.keymap.set('n', '<C-s>', dwm.rotate)
-      vim.keymap.set('n', '<C-c>', function()
-        vim.notify('closing!', vim.log.levels.INFO)
-        dwm.close()
-      end)
-
-      vim.cmd [[au BufRead * if &previewwindow | let b:dwm_disabled = 1 | endif]]
-    end,
-  },
-  { -- LSP Configuration & Plugins
+    -- Main LSP Configuration
     'neovim/nvim-lspconfig',
     dependencies = {
       -- Automatically install LSPs and related tools to stdpath for Neovim
@@ -600,8 +578,7 @@ require('lazy').setup({
       --  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
       --  See `:help lsp-config` for information about keys and how to configure
       local servers = {
-        clangd = {},
-        ols = {},
+        -- clangd = {},
         -- gopls = {},
         -- pyright = {},
         -- rust_analyzer = {},
@@ -622,7 +599,7 @@ require('lazy').setup({
       -- You can press `g?` for help in this menu.
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
-        'lua_ls', -- Lua Language server
+        'lua-language-server', -- Lua Language server
         'stylua', -- Used to format Lua code
         -- You can add other tools here that you want Mason to install
       })
@@ -861,7 +838,7 @@ require('lazy').setup({
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     config = function()
-      local filetypes = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
+      local filetypes = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'odin', 'go' }
       require('nvim-treesitter').install(filetypes)
       vim.api.nvim_create_autocmd('FileType', {
         pattern = filetypes,
@@ -870,42 +847,7 @@ require('lazy').setup({
     end,
   },
 
-  {
-    'folke/zen-mode.nvim',
-    opts = {},
-    config = function()
-      require('zen-mode').setup()
-      vim.keymap.set('n', '<leader>z', require('zen-mode').toggle, { desc = '[Z]en mode toggle' })
-    end,
-  },
-  {
-    'Sonicfury/scretch.nvim',
-    requires = 'nvim-telescope/telescope.nvim',
-    config = function()
-      local scretch = require 'scretch'
-
-      scretch.setup {
-        scretch_dir = vim.fn.stdpath 'config' .. '/scretch/', -- will be created if it doesn't exist
-        templte_dir = vim.fn.stdpath 'data' .. '/scretch/templates', -- will be created if it doesn't exist
-        default_name = 'scretch_',
-        default_type = 'md', -- default unnamed Scretches are named "scretch_*.txt"
-        split_cmd = 'vsplit', -- vim split command used when creating a new Scretch
-        backend = 'telescope.builtin', -- also accpets "fzf-lua"
-      }
-
-      vim.keymap.set('n', '<leader>scnn', scretch.new, { desc = '[Sc]retch [N]ew' })
-      vim.keymap.set('n', '<leader>scna', scretch.new_named, { desc = '[Sc]retch [N]ew N[a]me' })
-      vim.keymap.set('n', '<leader>scl', scretch.last, { desc = '[Sc]retch [L]ast' })
-      vim.keymap.set('n', '<leader>scs', scretch.search, { desc = '[Sc]retch [S]earch' })
-      vim.keymap.set('n', '<leader>scg', scretch.grep, { desc = '[Sc]retch [G]rep' })
-      vim.keymap.set('n', '<leader>sce', scretch.explore, { desc = '[Sc]retch [E]xplore' })
-      vim.keymap.set('n', '<leader>sctn', scretch.new_from_template, { desc = '[Sc]retch [T]emplate [N]ew' })
-      vim.keymap.set('n', '<leader>scte', scretch.edit_template, { desc = '[Sc]retch [T]emplate [E]dit' })
-      vim.keymap.set('n', '<leader>scts', scretch.save_as_template, { desc = '[Sc]retch [T]emplate [S]ave' })
-    end,
-  },
-
-  -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
+  -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
   -- place them in the correct locations.
 
